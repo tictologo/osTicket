@@ -25,12 +25,12 @@ else
     <div>
         <label for="email"><?php echo __('Email Address'); ?>:
         <input id="email" placeholder="<?php echo __('e.g. john.doe@osticket.com'); ?>" type="text"
-            name="lemail" size="35" value="<?php echo $email; ?>" class="nowarn"></label>
+            name="lemail" size="30" value="<?php echo $email; ?>" class="nowarn"></label>
     </div>
     <div>
         <label for="ticketno"><?php echo __('Ticket Number'); ?>:
         <input id="ticketno" type="text" name="lticket" placeholder="<?php echo __('e.g. 051243'); ?>"
-            size="35" value="<?php echo $ticketid; ?>" class="nowarn"></label>
+            size="30" value="<?php echo $ticketid; ?>" class="nowarn"></label>
     </div>
     <p>
         <input class="btn" type="submit" value="<?php echo $button; ?>">
@@ -52,8 +52,6 @@ else
     '<a href="account.php?do=create">','</a>');
     }
 }?>
-
-
     </div>
 </div>
 </form>
