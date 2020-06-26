@@ -140,6 +140,7 @@ html {
     font-weight: bold;
     font-size: 18px;
   }
+
   h3 {
     font-size: 16px;
   }
@@ -1130,11 +1131,11 @@ html {
   }
   
   .thread-entry.response .header {
-    background: #e4ffe4;
+    background: #f0fff0;
     color: #3c4a58;
   }
   .thread-entry.avatar.response .header:after {
-      border-left: 7px solid #e4ffe4;
+      border-left: 7px solid #f0fff0;
       margin-right: 1px;
   }
   
