@@ -15,8 +15,7 @@ if (!$ignoreVisibility || //limited visibility
 
 // do not show children tickets unless agent is doing a search
 if ($queue->isAQueue() || $queue->isASubQueue())
-    $tickets->filter(Q::any(
-            array('ticket_pid' => null, 'flags__hasbit' => TICKET::FLAG_LINKED)));
+    $tickets->filter(Q::all(new Q(array('thread__object_type' => 'T'))));
 
 // Make sure the cdata materialized view is available
 TicketForm::ensureDynamicDataView();
@@ -109,23 +108,7 @@ if (isset($tickets->extra['tables'])) {
 }
 
 $tickets->distinct('ticket_id');
-$Q = $queue->getBasicQuery();
-
-if ($Q->constraints) {
-    if (count($Q->constraints) > 1) {
-        foreach ($Q->constraints as $value) {
-            if (!$value->constraints)
-                $empty = true;
-        }
-    }
-}
-
-if (($Q->extra && isset($Q->extra['tables'])) || !$Q->constraints || $empty) {
-    $skipCount = true;
-    $count = '-';
-}
-
-$count = $count ?: $queue->getCount($thisstaff);
+$count = $queue->getCount($thisstaff) ?: PAGE_LIMIT;
 $pageNav->setTotal($count, true);
 $pageNav->setURL('tickets.php', $args);
 ?>
@@ -259,6 +242,7 @@ foreach ($columns as $C) {
   </thead>
   <tbody>
 <?php
+
 foreach ($tickets as $T) {
     echo '<tr>';
     if ($canManageTickets) { ?>
@@ -266,14 +250,50 @@ foreach ($tickets as $T) {
             value="<?php echo $T['ticket_id']; ?>" /></td>
 <?php
     }
+
+//@virtualejo 2020240612 agrego algunas líneas para formatear los datos de las listas de tickets
+//La primera columna será siempre el número del caso, y la última, el nivel de prioridad. Solo estas se rellenan con fondo.
+// Para el caso de la columna 2, siempre corresponde al asunto del caso, para esta no aplica fondo ni color de texto
+    $count=1; // inicializo contador en 1, para que coincida con el número de columnas
+    $ncolumna = count($columns);
+
     foreach ($columns as $C) {
-        list($contents, $styles) = $C->render($T);
+
+        list($contents, $styles) = $C->render($T);     
+
+        // Estilos para columna de prioridad, esto requiere ajustar estos valores de prioridad (Normal, Alta, etc) directamente en la DB
+        if($contents == 'Normal') {$styles = 'color:#007b99;; font-weight:bold; text-align: center; /* background-color:#edfcff */'; }
+        if($contents == 'Alta') {$styles = 'color: #dc741c; font-weight: bold; text-align: center; font-size: 1.1em; background-color:#fff6d4'; }
+        if($contents == 'Urgente') {$styles = 'background-color: #ff4955; font-weight: bold; text-align: center; color:white'; }
+        if($contents == 'Baja') {$styles = 'color: #212931; font-weight: bold; text-align: center; background-color:#f4f4f4'; } 
+
+        if($count == 2) {   // Para la segunda columna (ASUNTO)
+            $estilos = explode(';', $styles);           
+            unset($estilos[0]); // quito el color de fondo
+            $styles = implode(';', $estilos);  
+          }
+
+          if($count == $ncolumna-1) {  // Para la penúltima columna, generalmente nombre de agente o de cliente, minimizo el tamaño de letra.
+            $styles = 'font-size: 9pt;'; 
+          }
+
+          // Si la columna no debe tener formato, vacío la variable $styles
+         if($count>2 and $count < $ncolumna-1) { $styles = ''; }   
+
+         // Si es la primera columna, aplico class para heredar formatos CSS en número de ticket
+         if($count == 1) { $class = 'class = "numbercase"'; } else {$class = '';}  
+
         if ($style = $styles ? 'style="'.$styles.'"' : '') {
-            echo "<td $style><div $style>$contents</div></td>";
+            echo "<td $style ><div $class $style>$contents</div></td>";
         }
         else {
             echo "<td>$contents</td>";
         }
+
+        $count = $count + 1;
+
+//@virtualejo finaliza
+
     }
     echo '</tr>';
 }
@@ -298,7 +318,7 @@ foreach ($tickets as $T) {
 </table>
 
 <?php
-    if ($count > 0 || $skipCount) { //if we actually had any tickets returned.
+    if ($count > 0) { //if we actually had any tickets returned.
 ?>  <div>
       <span class="faded pull-right"><?php echo $pageNav->showing(); ?></span>
 <?php
