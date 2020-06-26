@@ -26,15 +26,15 @@
   margin-bottom: 1em;
 }
 .thread-body {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 14px !important;
+  font-family: 'Roboto Condensed', sans-serif; /*@virtualejo*/
+  font-size: 14px !important; /*@virtualejo*/
   line-height: 1.428571429;
   color: #333333;
   background-color: #ffffff;
   margin: 0;
   padding: 0.9em;
   word-wrap: break-word;
-  overflow-x: auto;
+  overflow-x: visible; /*@virtualejo*/
 }
 .thread-body a:focus {
   outline: thin dotted;
@@ -397,7 +397,7 @@
 .thread-body dl,
 .thread-body blockquote,
 .thread-body pre {
-	font-size: 14px;
+	font-size: 15px;
 	line-height: 1.5rem;
 }
 
