@@ -23,11 +23,10 @@ require 'api.inc.php';
 require_once INCLUDE_DIR."class.dispatcher.php";
 
 $dispatcher = patterns('',
-        url_post("^/tickets\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','create')),
-        url('^/tasks/', patterns('',
-                url_post("^cron$", array('api.cron.php:CronApiController', 'execute'))
-         ))
-        );
+            url_post("^/tickets\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','create')),
+            // consulta de ticket por usuario
+            url_get("^/tickets/clientTickets$", array('api.tickets.php:TicketApiController','getClientTickets')),
+);
 
 Signal::send('api', $dispatcher);
 

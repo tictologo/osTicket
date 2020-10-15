@@ -186,13 +186,79 @@ class TicketApiController extends ApiController {
         return $this->createTicket($data);
     }
 
+    function getTicketInfo(){
+        try{
+            if(!($key=$this->requireApiKey()))
+                return $this->exerr(401, __('API key not authorized'));
+
+
+            $ticket_number = $_REQUEST['ticketNumber'];
+            if (! ($ticket_number))
+                return $this->exerr(422, __('missing ticketNumber parameter '));
+
+            # Checks for valid ticket number
+            if (!is_numeric($ticket_number))
+                return $this->response(404, __("Invalid ticket number"));
+
+
+
+            # Checks for existing ticket with that number
+            $id = Ticket::getIdByNumber($ticket_number);
+ 
+            if ($id <= 0) return $this->response(404, __("Ticket not found"));
+            # Load ticket and send response
+            $ticket = new Ticket(0);
+            //$ticket->load($id);
+            $ticket=Ticket::lookup($id);
+
+            $result = array('ticket'=> $ticket ,'status_code' => '0', 'status_msg' => 'ticket details retrieved successfully');
+            $result_code=200;
+            $this->response($result_code, json_encode($result ), $contentType="application/json");
+      }
+      catch ( Throwable $e){
+              $msg = $e-> getMessage();
+              $result =  array('ticket'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
+              $this->response(500, json_encode($result),$contentType="application/json");
+      } 
+    }
+
+     //client tickets
+    function getClientTickets() {
+        try{
+            if(!($key=$this->requireApiKey()))
+                return $this->exerr(401, __('API key not authorized'));
+                // mysqli_set_charset('utf8mb4');
+
+                $clientUserName = $_REQUEST['clientUserMail'];
+                
+                if(!($clientUserName))
+                    return $this->exerr(422, __('missing clientUserMail parameter'));
+                $user = TicketUser::lookupByEmail($clientUserName);
+
+                $myTickets = Ticket::objects()->filter(array('user_id' => $user->getId()));
+
+                $tickets = array();
+                foreach ($myTickets as $ticket){
+                    array_push($tickets, $ticket);
+                }
+                $result_code = 200;
+                $result =  array('tickets'=> $tickets ,'status_code' => '0', 'status_msg' => 'success');
+
+                $this->response($result_code, json_encode($result ),$contentType="application/json");
+        }catch ( Throwable $e){
+            $msg = $e-> getMessage();
+            $result =  array('tickets'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
+            $this->response(500, json_encode($result),
+                $contentType="application/json");
+        }
+    }
 }
 
 //Local email piping controller - no API key required!
 class PipeApiController extends TicketApiController {
 
     //Overwrite grandparent's (ApiController) response method.
-    function response($code, $resp) {
+    function response($code, $resp, $contentType="text/plain"){
 
         //Use postfix exit codes - instead of HTTP
         switch($code) {

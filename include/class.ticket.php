@@ -37,7 +37,7 @@ require_once(INCLUDE_DIR.'class.task.php');
 require_once(INCLUDE_DIR.'class.faq.php');
 
 class Ticket extends VerySimpleModel
-implements RestrictedAccess, Threadable, Searchable {
+implements RestrictedAccess, Threadable, Searchable, JsonSerializable{
     static $meta = array(
         'table' => TICKET_TABLE,
         'pk' => array('ticket_id'),
@@ -3969,7 +3969,7 @@ implements RestrictedAccess, Threadable, Searchable {
      */
     static function create($vars, &$errors, $origin, $autorespond=true,
             $alertstaff=true) {
-        global $ost, $cfg, $thisstaff;
+        global $ost, $cfg, $thisstaff, $staff;
 
         // Don't enforce form validation for email
         $field_filter = function($type) use ($origin) {
@@ -4018,6 +4018,11 @@ implements RestrictedAccess, Threadable, Searchable {
 
         if ($vars['uid'])
             $user = User::lookup($vars['uid']);
+        
+        if($vars['assignee']){
+            $staff = Staff::lookup(array('username'=>$vars['assignee']));
+            $vars['assignId']= 's'.$staff -> getId();
+        }
 
         $id=0;
         $fields=array();
@@ -4066,7 +4071,7 @@ implements RestrictedAccess, Threadable, Searchable {
                             if (!$field->isEnabled() && $field->hasFlag(DynamicFormField::FLAG_ENABLED))
                                 $disabled[] = $field->get('id');
                         }
-                        // Special handling for the ticket form — disable fields
+                        // Special handling for the ticket form — disable fields
                         // requested to be disabled as per the help topic.
                         if ($__F->get('type') == 'T') {
                             foreach ($form->getFields() as $field) {
@@ -4740,6 +4745,38 @@ EOF;
                 );
             }
         }
+    }
+
+    public function jsonSerialize() {
+        $types = array('M', 'R', 'N');
+        $threadTypes=array('M'=>'message','R'=>'response', 'N'=>'note');
+        $thread = $this->getThreadEntries($types);
+        $a = array();
+        foreach ($thread as $tentry) {
+            array_push($a , $tentry);
+        }
+        return [
+
+            'ticket_number' => $this->getNumber(),
+            'subject' => $this->getSubject(),
+            'ticket_status' => $this->getStatus()->getName(),
+            'statusId' => $this->getStatus()->getId(),
+            'priority' => $this->getPriority(),
+            'department' => $this->getDeptName(),
+            'create_timestamp' => $this->getCreateDate(),
+            'user_name' => $this->getName()->getFull(),
+            'user_email' => $this->getEmail(),
+            'user_phone' => $this->getPhoneNumber(),
+            'source' => $this->getSource(),
+            'due_timestamp' => $this->getEstDueDate(),
+            'close_timestamp' => $this->getCloseDate(),
+            'help_topic' => $this->getHelpTopic(),
+            'last_message_timestamp' => $this->getLastMsgDate(),
+            'last_response_timestamp' => $this->getLastRespDate(),
+            'assigned_to' => $this->getAssignees(),
+            'thread_entries' =>$a
+
+        ];
     }
 }
 RolePermission::register(/* @trans */ 'Tickets', Ticket::getPermissions(), true);
